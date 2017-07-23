@@ -1,15 +1,15 @@
-
 require("on_init")
 require("on_load")
 
 PlannerCore = {}
 PlannerCore.stage_function_table = {}
 
-
--- Load stage functions 
+-- Load stage functions
 require("OB_stages")
 require("PB_stages")
+require("PB_opt_stages")
 
+-- On tick functions
 function PlannerCore.placement_tick(state)
     local namespace = state.stage_namespace
     local stage_name = state.stages[state.stage + 1]
@@ -20,7 +20,10 @@ function PlannerCore.placement_tick(state)
         stage_function = PlannerCore.stage_function_table[stage_name[1]][stage_name[2]]
     end
     if not stage_function then
-        state.player.print("PlannerCore Error: Bad stage name " .. serpent.block(stage_name) .. " in namespace " .. namespace .. ", aborting.")
+        state.player.print(
+            "PlannerCore Error: Bad stage name " ..
+                serpent.block(stage_name) .. " in namespace " .. namespace .. ", aborting."
+        )
         state.stage = 1000
         return
     end
@@ -97,8 +100,6 @@ function PlannerCore.run_immediately(state)
 end
 
 function PlannerCore.on_tick(event)
-
-
     if #global.running_states == 0 then
         script.on_event(defines.events.on_tick, nil)
     else
@@ -106,19 +107,21 @@ function PlannerCore.on_tick(event)
         local i = 1
         while i <= #global.running_states do
             local state = global.running_states[i]
-
-
-            if event.tick % 60 == 0 then
-                game.print("Handler running")
-                game.print("In stage " .. state.stage)
-            end
-
-
-            if state.stage < #state.stages then
-                PlannerCore.placement_tick(state)
-                i = i + 1
-            else
+            -- if event.tick % 60 == 0 then
+            --     game.print("Handler running")
+            --     game.print("In stage " .. state.stage)
+            -- end
+            if state.count > 10000 then
+                game.print("PlannerCore Error: Count exceeds 10000, will abort.")
+                game.print("Was in state " .. state.stage .. " (" .. state.stages[state.stage] .. ").")
                 table.remove(global.running_states, i)
+            else
+                if state.stage < #state.stages then
+                    PlannerCore.placement_tick(state)
+                    i = i + 1
+                else
+                    table.remove(global.running_states, i)
+                end
             end
         end
     end
@@ -138,4 +141,12 @@ end
 
 table.insert(ON_INIT, PlannerCore.clear_running_state)
 
+-- Remote interfaces
+
 remote.add_interface("PlannerCore", {register = PlannerCore.register, run_immediately = PlannerCore.run_immediately})
+
+PlannerCore.remote_invoke = {}
+
+require("PB_invoke")
+
+remote.add_interface("PlannerCoreInvoke", PlannerCore.remote_invoke)

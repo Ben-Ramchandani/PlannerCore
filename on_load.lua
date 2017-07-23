@@ -9,4 +9,3 @@ function ON_LOAD_FUNCTION()
 end
 
 script.on_load(ON_LOAD_FUNCTION)
-
