@@ -158,6 +158,7 @@ function table.append_modify(t1, t2)
     for i, v in ipairs(t2) do
         table.insert(t1, v)
     end
+    return t1
 end
 
 function table.find(t, func)
@@ -272,24 +273,6 @@ function util.find_blueprint_bounding_box(entities)
     return {left_top = {x = left, y = top}, right_bottom = {x = right, y = bottom}}
 end
 
-function util.find_bounding_box_positions(positions)
-    local top = math.huge
-    local left = math.huge
-    local right = -math.huge
-    local bottom = -math.huge
-
-    for k, position in pairs(positions) do
-        top = math.min(top, position.y)
-        left = math.min(left, position.x)
-        bottom = math.max(bottom, position.y)
-        right = math.max(right, position.x)
-    end
-    return {
-        left_top = {x = left, y = top},
-        right_bottom = {x = right, y = bottom}
-    }
-end
-
 function util.find_collision_bounding_box(entities)
     local top = math.huge
     local left = math.huge
@@ -315,6 +298,24 @@ function util.find_collision_bounding_box(entities)
     return {
         left_top = {x = math.floor(left), y = math.floor(top)},
         right_bottom = {x = math.ceil(right), y = math.ceil(bottom)}
+    }
+end
+
+function util.find_bounding_box_positions(positions)
+    local top = math.huge
+    local left = math.huge
+    local right = -math.huge
+    local bottom = -math.huge
+
+    for k, position in pairs(positions) do
+        top = math.min(top, position.y)
+        left = math.min(left, position.x)
+        bottom = math.max(bottom, position.y)
+        right = math.max(right, position.x)
+    end
+    return {
+        left_top = {x = left, y = top},
+        right_bottom = {x = right, y = bottom}
     }
 end
 
@@ -356,4 +357,22 @@ function util.add_box_position(box, position)
         left_top = {x = box.left_top.x + position.x, y = box.left_top.y + position.y},
         right_bottom = {x = box.right_bottom.x + position.x, y = box.right_bottom.y + position.y}
     }
+end
+
+function util.strip_entities_of_type(list, type)
+    return table.filter_remove(
+        list,
+        function(entity)
+            return game.entity_prototypes[entity.name].type == type
+        end
+    )
+end
+
+function util.strip_entities_of_name(list, name)
+    return table.filter_remove(
+        list,
+        function(entity)
+            return entity.name == name
+        end
+    )
 end
