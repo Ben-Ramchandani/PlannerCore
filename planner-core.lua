@@ -1,5 +1,6 @@
 require("on_init")
 require("on_load")
+require("WB_default_config")
 
 PlannerCore = {}
 PlannerCore.stage_function_table = {}
@@ -146,7 +147,7 @@ table.insert(ON_INIT, PlannerCore.clear_running_state)
 remote.add_interface("PlannerCore", {register = PlannerCore.register, run_immediately = PlannerCore.run_immediately})
 
 PlannerCore.remote_invoke = {}
-
 require("PB_invoke")
+require("WB_gui")
 
 remote.add_interface("PlannerCoreInvoke", PlannerCore.remote_invoke)

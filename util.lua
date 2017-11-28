@@ -273,6 +273,32 @@ function util.find_blueprint_bounding_box(entities)
     return {left_top = {x = left, y = top}, right_bottom = {x = right, y = bottom}}
 end
 
+function util.shift_blueprint(entities, shift_x, shift_y)
+    table.apply(
+        entities,
+        function(entity)
+            entity.direction = entity.direction or 0
+            entity.position.x = entity.position.x + shift_x
+            entity.position.y = entity.position.y + shift_y
+        end
+    )
+end
+
+function util.find_blueprint_bounding_box_no_collision(entities)
+    local top = math.huge
+    local left = math.huge
+    local right = -math.huge
+    local bottom = -math.huge
+
+    for k, entity in pairs(entities) do
+            top = math.min(top, entity.position.y)
+            left = math.min(left, entity.position.x)
+            bottom = math.max(bottom, entity.position.y)
+            right = math.max(right, entity.position.x)
+    end
+    return {left_top = {x = left, y = top}, right_bottom = {x = right, y = bottom}}
+end
+
 function util.find_collision_bounding_box(entities)
     local top = math.huge
     local left = math.huge
