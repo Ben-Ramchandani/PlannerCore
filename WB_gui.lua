@@ -124,6 +124,8 @@ local function read_blueprint(item, conf, player)
         crossing_entities = {}
     end
 
+    -- TODO Set up filler blueprint, called filler_entities
+
     local new_config = {
         section_entities = section_data.entities,
         corner_entities = corner_entities,

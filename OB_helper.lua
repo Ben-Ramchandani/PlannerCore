@@ -121,10 +121,8 @@ function OB_helper.collision_check(state, abs_data)
     return true
 end
 
-function OB_helper.place_entity(state, data)
+function OB_helper.abs_place_entity(state, data)
     data.force = state.force
-    data.position = OB_helper.abs_position(state, data.position)
-    data.direction = OB_helper.abs_direction(state, data.direction)
     local name = data.name
 
     if state.conf.check_collision and not OB_helper.collision_check(state, data) then
@@ -167,6 +165,12 @@ function OB_helper.place_entity(state, data)
     end
 
     return entity
+end
+
+function OB_helper.place_entity(state, data)
+    data.position = OB_helper.abs_position(state, data.position)
+    data.direction = OB_helper.abs_direction(state, data.direction)
+    return OB_helper.abs_place_entity(state, data)
 end
 
 function OB_helper.on_error(state)

@@ -2,7 +2,7 @@ WB_CONF_DEFAULT = {
     dummy_spacing_entitiy = "wooden-chest",
     iterations_per_tick = 100,
     water_tiles = {"water", "deepwater", "water-green", "deepwater-green", "out-of-map"},
-    clearance_tiles = 3,
+    clearance_tiles = 1,
     run_over_multiple_ticks = true,
     corner_entities = {
         {
@@ -172,9 +172,22 @@ WB_CONF_DEFAULT = {
             }
         }
     },
+    filler_entities = {
+        direction = 0,
+        entity_number = 1,
+        name = "stone-wall",
+        position = {
+            x = 0.5,
+            y = 0.5
+        }
+    },
     section_height = 3,
     section_width = 8,
     wall_name = "stone-wall",
     wall_outer_row = 0,
     wall_thickness = 1
 }
+
+PlannerCore.remote_invoke.WB_default_config = function()
+    return WB_CONF_DEFAULT
+end

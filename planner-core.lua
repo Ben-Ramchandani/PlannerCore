@@ -1,6 +1,6 @@
 require("on_init")
 require("on_load")
-require("WB_default_config")
+require("util")
 
 PlannerCore = {}
 PlannerCore.stage_function_table = {}
@@ -9,6 +9,7 @@ PlannerCore.stage_function_table = {}
 require("OB_stages")
 require("PB_stages")
 require("PB_opt_stages")
+require("WB_stages")
 
 -- On tick functions
 function PlannerCore.placement_tick(state)
@@ -85,6 +86,7 @@ function PlannerCore.register(state)
     if #global.running_states == 1 then
         script.on_event(defines.events.on_tick, PlannerCore.on_tick)
     end
+
     return true
 end
 
@@ -108,10 +110,10 @@ function PlannerCore.on_tick(event)
         local i = 1
         while i <= #global.running_states do
             local state = global.running_states[i]
-            -- if event.tick % 60 == 0 then
-            --     game.print("Handler running")
-            --     game.print("In stage " .. state.stage)
-            -- end
+            if event.tick % 60 == 0 then
+                game.print("Handler running")
+                game.print("In stage " .. state.stage)
+            end
             if state.count > 10000 then
                 game.print("PlannerCore Error: Count exceeds 10000, will abort.")
                 game.print("Was in state " .. state.stage .. " (" .. state.stages[state.stage] .. ").")
@@ -148,6 +150,8 @@ remote.add_interface("PlannerCore", {register = PlannerCore.register, run_immedi
 
 PlannerCore.remote_invoke = {}
 require("PB_invoke")
+require("WB_default_config")
+require("WB_invoke")
 require("WB_gui")
 
 remote.add_interface("PlannerCoreInvoke", PlannerCore.remote_invoke)
