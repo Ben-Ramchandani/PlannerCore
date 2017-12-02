@@ -169,7 +169,7 @@ end
 
 function OB_helper.place_entity(state, data)
     data.position = OB_helper.abs_position(state, data.position)
-    data.direction = OB_helper.abs_direction(state, data.direction)
+    OB_helper.abs_direction(state, data)
     return OB_helper.abs_place_entity(state, data)
 end
 
@@ -363,12 +363,18 @@ function OB_helper.abs_area(state, area)
     }
 end
 
-function OB_helper.abs_direction(state, direction)
-    if direction then
-        return (direction + state.direction_modifier) % 8
-    else
-        return nil
+function OB_helper.abs_direction(state, data)
+    if data.direction then
+        data.direction = (data.direction + state.direction_modifier) % 8
     end
+    if data.pickup_position then
+        data.pickup_position =
+            util.rotate_position_origin(data.pickup_position, state.direction_modifier, data.position)
+    end
+    if data.drop_position then
+        data.drop_position = util.rotate_position_origin(data.drop_position, state.direction_modifier, data.position)
+    end
+    return data
 end
 
 function OB_helper.set_up_leaving_belt(state, row_details, belt, is_underground)

@@ -110,10 +110,10 @@ function PlannerCore.on_tick(event)
         local i = 1
         while i <= #global.running_states do
             local state = global.running_states[i]
-            if event.tick % 60 == 0 then
-                game.print("Handler running")
-                game.print("In stage " .. state.stage)
-            end
+            -- if event.tick % 60 == 0 then
+            --     game.print("Handler running")
+            --     game.print("In stage " .. state.stage)
+            -- end
             if state.count > 10000 then
                 game.print("PlannerCore Error: Count exceeds 10000, will abort.")
                 game.print("Was in state " .. state.stage .. " (" .. state.stages[state.stage] .. ").")

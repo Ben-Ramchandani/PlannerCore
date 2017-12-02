@@ -44,30 +44,6 @@ WB_CONF_DEFAULT = {
                 x = 0.5,
                 y = 2.5
             }
-        },
-        {
-            entity_number = 2,
-            name = "stone-wall",
-            position = {
-                x = 1.5,
-                y = 1.5
-            }
-        },
-        {
-            entity_number = 3,
-            name = "stone-wall",
-            position = {
-                x = 2.5,
-                y = 1.5
-            }
-        },
-        {
-            entity_number = 5,
-            name = "stone-wall",
-            position = {
-                x = 1.5,
-                y = 2.5
-            }
         }
     },
     crossing_entities = {
@@ -76,16 +52,18 @@ WB_CONF_DEFAULT = {
             name = "gate",
             position = {
                 x = 0.5,
-                y = 0
-            }
+                y = 0.5
+            },
+            direction = 2
         },
         {
             entity_number = 2,
             name = "gate",
             position = {
                 x = 1.5,
-                y = 0
-            }
+                y = 0.5
+            },
+            direction = 2
         }
     },
     crossing_width = 2,
@@ -173,16 +151,20 @@ WB_CONF_DEFAULT = {
         }
     },
     filler_entities = {
-        direction = 0,
-        entity_number = 1,
-        name = "stone-wall",
-        position = {
-            x = 0.5,
-            y = 0.5
+        {
+            direction = 0,
+            entity_number = 1,
+            name = "stone-wall",
+            position = {
+                x = 0.5,
+                y = 0.5
+            }
         }
     },
     section_height = 3,
     section_width = 8,
+    corner_width = 3,
+    filler_width = 1, -- Include in generation TODO
     wall_name = "stone-wall",
     wall_outer_row = 0,
     wall_thickness = 1

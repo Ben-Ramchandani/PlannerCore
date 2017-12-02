@@ -11,7 +11,7 @@ function PC_WB_invoke(entities, player, conf)
         left = math.huge,
         right = -math.huge,
         entities = entities,
-        stages = {"bounding_box", "NS_rail_positions", "EW_rail_positions", "plan"},
+        stages = {"bounding_box", "NS_rail_positions", "EW_rail_positions", "plan", "place_entity"},
         stage_namespace = "WB_stage",
         stage = 0,
         count = 0,
@@ -29,17 +29,16 @@ function PC_WB_invoke(entities, player, conf)
         right_section_list = {},
         placed_entities = {},
         pole_positions = {},
-        current_placement_direction = "top",
+        current_placement_direction = 1,
         current_section_index = 1,
-        current_section_start = 0
+        current_entity_index = 1
     }
-    
+
     if conf.run_over_multiple_ticks then
         remote.call("PlannerCore", "register", state)
     else
         remote.call("PlannerCore", "run_immediately", state)
     end
 end
-
 
 PlannerCore.remote_invoke.WallBuilder = PC_WB_invoke

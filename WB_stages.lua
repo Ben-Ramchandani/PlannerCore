@@ -1,77 +1,4 @@
--- require("on_init")
 require("util")
--- require("blueprints")
--- require("config")
--- require("on_tick")
--- require("gui_button")
-
--- function place_ghost(state, data)
---     data.inner_name = data.name
---     data.name = "entity-ghost"
---     data.expires = false
---     if not state.surface.create_entity(data) then
---         game.print("Failed to place " .. serpent.block(data))
---     end
--- end
-
--- function is_car(entity)
---     return entity.prototype.friction_force
--- end
-
--- function place_other_entity(state, data)
---     data.force = state.force
---     place_ghost(state, data)
--- end
-
--- function place_wall(state, position, is_horizontal)
---     local data = {name = state.conf.wall, position = position, force = state.force}
---     if state.surface.can_place_entity(data) then
---         place_ghost(state, data)
---     elseif not table.contains(state.conf.water_tiles, state.surface.get_tile(position.x, position.y).name) then
---         local colliding = state.surface.find_entities_filtered({area = {{position.x - 0.5, position.y - 0.5}, {position.x + 0.5, position.y + 0.5}}})
---         if #colliding == 0 then
---             game.print("WallBuilder: Couldn't place wall, but couldn't find a colliding entity or tile.")
---             return
---         end
---         local still_colliding = false
---         local place_gate = false
---         for i, entity in ipairs(colliding) do
---             if entity.prototype.collision_box and entity.prototype.collision_mask and entity.prototype.collision_mask["object-layer"] and not entity.to_be_deconstructed(state.force) and not (entity.name == "player") and not is_car(entity) then
---                 if entity.name == "straight-rail"
---                         and ((entity.direction == defines.direction.north or entity.direction == defines.direction.south and is_horizontal)
---                         or (entity.direction == defines.direction.east or entity.direction == defines.direction.west and not is_horizontal)) then
---                     place_gate = true
---                 else
---                     still_colliding = true
---                     -- if state.deconstruct_friendly then
---                     --     if not entity.order_deconstruction(state.force) then
---                     --         still_colliding = true
---                     --     end
---                     -- else
---                     --     if entity.force == state.force then
---                     --         still_colliding = true
---                     --     elseif entity.force.name == "neutral" then
---                     --         if not entity.order_deconstruction(state.force) then
---                     --             still_colliding = true
---                     --         end
---                     --     end
---                     -- end
---                 end
---             end
---         end
---         if not still_colliding then
---             if place_gate then
---                 if is_horizontal then
---                     place_ghost(state, {name = "gate", position = position, force = state.force, direction = defines.direction.east})
---                 else
---                     place_ghost(state, {name = "gate", position = position, force = state.force, direction = defines.direction.north})
---                 end
---             else
---                 place_ghost(state, data)
---             end
---         end
---     end
--- end
 
 --[[  Placement functions  ]]
 WB_stage = {}
@@ -130,25 +57,6 @@ function WB_stage.bounding_box(state)
             state.stage = 1000
             return true
         end
-        -- state.left = math.floor(state.left - state.conf.clearance_tiles - state.conf.section_height)
-        -- state.top = math.floor(state.top - state.conf.clearance_tiles - state.conf.section_height)
-        -- state.right = math.ceil(state.right + state.conf.clearance_tiles + state.conf.section_height)
-        -- state.bottom = math.ceil(state.bottom + state.conf.clearance_tiles + state.conf.section_height)
-        -- state.width = state.right - state.left
-        -- state.height = state.bottom - state.top
-        -- if state.conf.has_other_entities then
-        --     game.print(state.conf.section_width)
-        --     state.sections_per_width =
-        --         math.floor((state.width - state.conf.section_height * 2) / state.conf.section_width)
-        --     state.sections_per_height =
-        --         math.floor((state.height - state.conf.section_height * 2) / state.conf.section_width)
-        --     game.print(state.sections_per_width)
-        --     state.entities_per_width = state.sections_per_width * #state.other_entities
-        --     state.entities_per_height = state.sections_per_height * #state.other_entities
-        --     game.print(state.entities_per_width)
-        --     state.sections_x_gap = math.floor((state.width - (state.sections_per_width * state.conf.section_width)))
-        --     state.sections_y_gap = math.floor((state.height - (state.sections_per_height * state.conf.section_width)))
-        -- end
         return true
     end
 end
@@ -296,15 +204,50 @@ function WB_stage.plan(state)
     -- Assume symmetry of rail wall piece
     for k, side in pairs(
         {
-            {left = state.left, right = state.right, rails = state.top_rails, sections = state.top_section_list},
-            {left = state.top, right = state.bottom, rails = state.left_rails, sections = state.left_section_list},
-            {left = state.left, right = state.right, rails = state.bottom_rails, sections = state.bottom_section_list},
-            {left = state.top, right = state.bottom, rails = state.right_rails, sections = state.right_section_list}
+            {
+                left = state.left,
+                right = state.right,
+                rails = state.top_rails,
+                sections = state.top_section_list,
+                corner_position = "first"
+            },
+            {
+                left = state.top,
+                right = state.bottom,
+                rails = state.left_rails,
+                sections = state.left_section_list,
+                corner_position = "last"
+            },
+            {
+                left = state.left,
+                right = state.right,
+                rails = state.bottom_rails,
+                sections = state.bottom_section_list,
+                corner_position = "last"
+            },
+            {
+                left = state.top,
+                right = state.bottom,
+                rails = state.right_rails,
+                sections = state.right_section_list,
+                corner_position = "first"
+            }
         }
     ) do
         table.sort(side.rails)
         side.rails[#side.rails + 1] = side.right
         local current_x = side.left
+        if side.corner_position == "first" then
+            table.insert(
+                side.sections,
+                {
+                    entities = state.conf.corner_entities,
+                    offset = current_x - state.conf.corner_width,
+                    width = state.conf.corner_width,
+                    name = "corner"
+                }
+            )
+        end
         for k, next_x in ipairs(side.rails) do
             local length = next_x - current_x
             local num_sections = math.floor(length / state.conf.section_width)
@@ -318,24 +261,64 @@ function WB_stage.plan(state)
             --                         length .. ", num_sections: " .. num_sections .. ", difference: " .. difference
             -- )
             for i = 1, num_sections do
-                table.insert(side.sections, "normal")
+                table.insert(
+                    side.sections,
+                    {
+                        entities = state.conf.section_entities,
+                        offset = current_x,
+                        width = state.conf.section_width,
+                        name = "section"
+                    }
+                )
                 current_x = current_x + state.conf.section_width
             end
             for i = 1, difference do
-                table.insert(side.sections, "filler")
+                table.insert(
+                    side.sections,
+                    {
+                        entities = state.conf.filler_entities,
+                        offset = current_x,
+                        width = state.conf.filler_width,
+                        name = "filler"
+                    }
+                )
                 current_x = current_x + 1
             end
-            table.insert(side.sections, "rail")
+            table.insert(
+                side.sections,
+                {
+                    entities = state.conf.crossing_entities,
+                    offset = current_x,
+                    width = state.conf.crossing_width,
+                    name = "crossing"
+                }
+            )
+            current_x = current_x + state.conf.crossing_width
         end
-        -- Get rid of the last rail, it will be a corner instead
-        side.sections[#side.sections] = nil
+        if side.corner_position == "first" then
+            side.sections[#side.sections] = nil
+        else
+            side.sections[#side.sections] = {
+                entities = state.conf.corner_entities,
+                offset = current_x - state.conf.crossing_width,
+                width = state.conf.corner_width,
+                name = "corner"
+            }
+        end
     end
 
-    state.stage = 1000
+    game.print(serpent.block(table.map(state.bottom_section_list, function(s) return s.name end)))
+
+    state.section_master_list = {
+        state.right_section_list,
+        state.bottom_section_list,
+        state.left_section_list,
+        state.top_section_list
+    }
     return true
 end
 
-function helper_place_entity(state, data)
+local function helper_place_entity(state, data)
     if state.use_pole_builder and game.entity_prototypes[data.name].type == "electric-pole" then
         table.insert(state.pole_positions, data.position)
     else
@@ -343,109 +326,57 @@ function helper_place_entity(state, data)
     end
 end
 
+local function helper_position(state, offset, entity_position, blueprint_width)
+    if state.current_placement_direction == 1 then -- Right
+        return {
+            x = state.right + state.conf.section_height - entity_position.y,
+            y = offset + entity_position.x
+        }
+    elseif state.current_placement_direction == 2 then -- Bottom
+        return {
+            x = offset + blueprint_width - entity_position.x,
+            y = state.bottom + state.conf.section_height - entity_position.y
+        }
+    elseif state.current_placement_direction == 3 then -- Left
+        return {
+            x = state.left - state.conf.section_height + entity_position.y,
+            y = offset + blueprint_width - entity_position.x
+        }
+    else -- Top
+        return {
+            x = offset + entity_position.x,
+            y = state.top - state.conf.section_height + entity_position.y
+        }
+    end
+end
+
 function WB_stage.place_entity(state)
-    
-end
-
-
-
-function place_walls(state)
-    local width = state.width + state.wall_thickness
-    local height = state.height + state.wall_thickness
-    if state.count <= width then
-        for i = 0, state.wall_thickness do
-            place_wall(state, {x = state.left + state.count, y = state.top - i}, true)
-        end
-    elseif state.count <= width + height then
-        for i = 0, state.wall_thickness do
-            place_wall(state, {x = state.right + i, y = state.top + state.count - width}, false)
-        end
-    elseif state.count <= width + height + width then
-        for i = 0, state.wall_thickness do
-            place_wall(state, {x = state.right - state.count + width + height, y = state.bottom + i}, true)
-        end
-    elseif state.count <= width + height + width + height then
-        for i = 0, state.wall_thickness do
-            place_wall(state, {x = state.left - i, y = state.bottom - state.count + width + height + width}, false)
-        end
+    if state.current_placement_direction > 4 then
+        return true
     else
+        local sections = state.section_master_list[state.current_placement_direction]
+        local section = sections[state.current_section_index]
+        local section_width = section.width
+        local entities = section.entities
+        local offset = section.offset
+
+        if state.current_entity_index > #entities then
+            state.current_section_index = state.current_section_index + 1
+            state.current_entity_index = 1
+            if state.current_section_index > #sections then
+                state.current_placement_direction = state.current_placement_direction + 1
+                state.current_section_index = 1
+            end
+            return false
+        end
+
+        local entity = table.deep_clone(entities[state.current_entity_index])
+        state.current_entity_index = state.current_entity_index + 1
+        entity.position = helper_position(state, offset, entity.position, section_width)
+        if entity.direction then
+            entity.direction = (entity.direction + (state.current_placement_direction * 2)) % 8
+        end
+        helper_place_entity(state, entity)
         return false
-    end
-    return true
-end
-
-function place_other_entities(state)
-    if not state.conf.has_other_entities then
-        return false
-    end
-    if state.count <= state.entities_per_width then
-        game.print("Placing")
-        local entity = state.other_entities[((state.count - 1) % #state.other_entities) + 1]
-        local section_number = math.floor((state.count - 1) / #state.other_entities)
-        local x_offset = section_number * state.conf.section_width
-        if section_number > (state.sections_per_width / 2) then
-            x_offset = x_offset + state.sections_x_gap
-        end
-        place_other_entity(
-            state,
-            {
-                name = entity.name,
-                position = {x = entity.position.x + x_offset + state.left, y = entity.position.y + 1 + state.top},
-                direction = entity.direction
-            }
-        )
-    else
-        return false
-    end
-    return true
-end
-
-function tick(state)
-    if state.count > 5000 then
-        game.print("Aborting in stage " .. state.stage .. ", count too high.")
-        state.stage = 1000
-        return
-    end
-    if state.stages[state.stage](state) then
-        state.count = state.count + 1
-    else
-        state.stage = state.stage + 1
-        state.count = 1
-    end
-end
-
---[[  Main funtion  ]]
-function on_selected_area(event, deconstruct_friendly)
-    local conf = get_config()
-
-    local player = game.players[event.player_index]
-    local force = player.force
-    local surface = player.surface
-
-    local state = {
-        surface = surface,
-        player = player,
-        force = force,
-        top = math.huge,
-        bottom = -math.huge,
-        left = math.huge,
-        right = -math.huge,
-        entities = event.entities,
-        stages = {bounding_box, deconstruct, place_walls, place_other_entities},
-        stage = 1,
-        count = 1,
-        conf = conf,
-        entity_count = 0,
-        deconstruct_friendly = deconstruct_friendly,
-        wall_thickness = conf.wall_thickness - 1,
-        other_entities = table.clone(conf.other_entities)
-    }
-
-    if conf.run_over_multiple_ticks then
-        register(state)
-    else
-        while state.stage <= #stages do
-            tick(state)
-        end
     end
 end

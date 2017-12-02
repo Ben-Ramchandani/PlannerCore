@@ -71,6 +71,8 @@ local function read_section(entities, conf)
     }
 end
 
+
+-- TODO this is broken
 local function generate_corner(section_data)
     local corner_entities = {}
     local size = section_data.height - 1
