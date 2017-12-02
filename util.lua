@@ -287,6 +287,19 @@ function util.rotate_position(position, direction, around_position)
     return position
 end
 
+function util.rotate_entity(entity, direction)
+    if entity.direction then
+        entity.direction = (entity.direction + direction) % 8
+    end
+    if entity.pickup_position then
+        entity.pickup_position = util.rotate_position_origin(entity.pickup_position, direction, entity.position)
+    end
+    if entity.drop_position then
+        entity.drop_position = util.rotate_position_origin(entity.drop_position, direction, entity.position)
+    end
+    return entity
+end
+
 function util.find_blueprint_bounding_box(entities)
     local top = math.huge
     local left = math.huge

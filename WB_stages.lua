@@ -307,7 +307,16 @@ function WB_stage.plan(state)
         end
     end
 
-    game.print(serpent.block(table.map(state.bottom_section_list, function(s) return s.name end)))
+    game.print(
+        serpent.block(
+            table.map(
+                state.bottom_section_list,
+                function(s)
+                    return s.name
+                end
+            )
+        )
+    )
 
     state.section_master_list = {
         state.right_section_list,
@@ -373,9 +382,7 @@ function WB_stage.place_entity(state)
         local entity = table.deep_clone(entities[state.current_entity_index])
         state.current_entity_index = state.current_entity_index + 1
         entity.position = helper_position(state, offset, entity.position, section_width)
-        if entity.direction then
-            entity.direction = (entity.direction + (state.current_placement_direction * 2)) % 8
-        end
+        util.rotate_entity(entity, state.current_placement_direction * 2)
         helper_place_entity(state, entity)
         return false
     end
