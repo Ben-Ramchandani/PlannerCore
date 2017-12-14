@@ -11,7 +11,7 @@ function PB_invoke.set_up_config(conf)
             prototype.collision_box.right_bottom.x == -prototype.collision_box.left_top.x and
             prototype.collision_box.right_bottom.y == -prototype.collision_box.left_top.y)
      then
-        error("PoleBuilder: Electric pole is not square.")
+        gane.print("PoleBuilder Error: Electric pole is not square.")
     end
     if size % 2 == 1 then
         conf.offset = 0.5
