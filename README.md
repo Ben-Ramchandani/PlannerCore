@@ -1,4 +1,4 @@
-# PlannerCore v0.1.0
+# PlannerCore v0.1.1
 
 Core mod for the planner series of mods ([Outpost Planner](https://github.com/Ben-Ramchandani/OutpostPlanner)).
 
@@ -9,6 +9,10 @@ This mod contains most of the code, allowing the mods to call each other without
 Please submit bug reports to the issues page of the mod you're using when the crash occurs, to help avoid duplicates.
 
 ## Changelog
+
+0.1.1
+
+* Fixed bug with other entities only being placed when miners are.
 
 0.1.0
 

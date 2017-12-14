@@ -268,7 +268,7 @@ end
 
 blueprint_place.other_entities = blueprint_place.place_other
 
-blueprint_place.order = {"miners", "poles", "belts", "underground_belts", "splitters", "chests", "other_entities"}
+blueprint_place.order = {"miners", "poles", "other_entities", "belts", "underground_belts", "splitters", "chests"}
 
 function OB_stage.place_blueprint_entity(state)
     local row = math.floor(state.count / state.entities_per_row)
