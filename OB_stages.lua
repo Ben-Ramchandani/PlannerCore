@@ -95,14 +95,18 @@ function OB_stage.set_up_placement_stages(state)
 
     if state.conf.enable_belt_collate then
         if #state.blueprint_data.leaving_belts > 0 and #state.blueprint_data.leaving_underground_belts > 0 then
-            table.append_modify(
-                state.stages,
-                {"leaving_belts", "leaving_underground_belts", "merge_lanes", "collate_outputs"}
-            )
+            table.append_modify(state.stages, {"leaving_belts", "leaving_underground_belts", "merge_lanes"})
         elseif #state.blueprint_data.leaving_belts > 0 then
-            table.append_modify(state.stages, {"leaving_belts", "merge_lanes", "collate_outputs"})
+            table.append_modify(state.stages, {"leaving_belts", "merge_lanes"})
         elseif #state.blueprint_data.leaving_underground_belts > 0 then
-            table.append_modify(state.stages, {"leaving_underground_belts", "merge_lanes", "collate_outputs"})
+            table.append_modify(state.stages, {"leaving_underground_belts", "merge_lanes"})
+        end
+        if state.conf.station and state.conf.station.bottom_input_belt_position then
+            table.append_modify(state.stages, {"train_align_y"})
+        end
+        table.append_modify(state.stages, {"collate_outputs"})
+        if state.conf.station then
+            table.append_modify(state.stages, {"place_station"})
         end
     end
 
@@ -433,7 +437,46 @@ function OB_stage.merge_lanes(state)
     table.remove(state.belt_row_details, min_index - 1)
 end
 
+function OB_stage.train_align_y(state)
+    game.print("align called")
+
+    local row = state.belt_row_details[#state.belt_row_details]
+    local splitter = false
+    if row.end_pos.y % 1 == 0 then
+        row.end_pos.y = row.end_pos.y - 0.5
+        splitter = true
+    end
+    if row then
+        game.print(
+            "Input belt y is " ..
+                state.conf.station.bottom_input_belt_position.y ..
+                    ", output y is .. " .. OB_helper.abs_position(state, row.end_pos).y .. "."
+        )
+        if (OB_helper.abs_position(state, row.end_pos).y - state.conf.station.bottom_input_belt_position.y) % 2 ~= 1 then
+            game.print("align requred")
+            local pos = row.end_pos
+            if splitter then
+                game.print("Splitter")
+                pos.y = pos.y + 1
+                pos.x = pos.x + 1
+                OB_helper.place_entity(state, {position = pos, name = row.belt, direction = defines.direction.east})
+                pos.x = pos.x + 1
+                OB_helper.place_entity(state, {position = pos, name = row.belt, direction = defines.direction.east})
+            else
+                pos.x = pos.x + 1
+                OB_helper.place_entity(state, {position = pos, name = row.belt, direction = defines.direction.south})
+                game.print("Place at " .. serpent.block(OB_helper.abs_position(state, pos)))
+                pos.y = pos.y + 1
+                OB_helper.place_entity(state, {position = pos, name = row.belt, direction = defines.direction.east})
+                game.print("Place at " .. serpent.block(OB_helper.abs_position(state, pos)))
+            end
+        end
+    end
+    return true
+end
+
 function OB_stage.collate_outputs(state) -- Move the outputs to be adjacent.
+    game.print("Collate start")
     local row = table.remove(state.belt_row_details)
     if row == nil then
         return true
@@ -475,4 +518,30 @@ function OB_stage.collate_outputs(state) -- Move the outputs to be adjacent.
         OB_helper.place_entity(state, {position = row.end_pos, name = belt, direction = defines.direction.east})
         table.insert(state.output_rows, row)
     end
+end
+
+function OB_stage.place_station(state)
+    game.print("place station")
+    local offset
+    if #state.output_rows > 0 then
+        offset = OB_helper.abs_position(state, state.output_rows[1].end_pos)
+        offset.x = offset.x - state.conf.station.bottom_input_belt_position.x + 1
+        offset.y = offset.y - state.conf.station.bottom_input_belt_position.y
+    else
+        --TODO
+        game.print("unimplemented")
+        return true
+    end
+    if (#state.output_rows > 0) and (offset.x - state.conf.station.track_x) % 2 ~= 1 then
+        table.append_modify(state.conf.station.entities, state.conf.station.input_belts)
+    else
+        offset.x = offset.x - 1
+    end
+    for k, e in pairs(state.conf.station.entities) do
+        local entity = table.deep_clone(e)
+        entity.position.x = offset.x + entity.position.x
+        entity.position.y = offset.y + entity.position.y
+        OB_helper.abs_place_entity(state, entity)
+    end
+    return true
 end

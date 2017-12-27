@@ -126,6 +126,8 @@ function OB_helper.abs_place_entity(state, data)
     local name = data.name
 
     if state.conf.check_collision and not OB_helper.collision_check(state, data) then
+        game.print("Collision on " .. serpent.block(data))
+        state.stage = 1000 -- TODO
         state.had_collision = true
         return false
     end
@@ -161,6 +163,13 @@ function OB_helper.abs_place_entity(state, data)
                 direction = data.direction,
                 bounding_box = table.deep_clone(entity.bounding_box)
             }
+        )
+    end
+
+    if (entity.position.x ~= data.position.x) or (entity.position.y ~= data.position.y) then
+        game.print(
+            "OutpostPlanner Warning: Game moved entity " ..
+                serpent.block(data) .. " to " .. serpent.block(entity.position) .. "."
         )
     end
 
