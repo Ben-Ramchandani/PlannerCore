@@ -1,3 +1,4 @@
+require("OB_helper") -- For collision check
 PB_helper = {}
 
 function PB_helper.can_place_pole(state, position)
@@ -22,7 +23,7 @@ function PB_helper.can_place_pole(state, position)
             prototype = entity.ghost_prototype
         end
         if
-            not entity.to_be_deconstructed(state.force) and prototype.collision_box and prototype.collision_mask and
+            (not entity.to_be_deconstructed(state.force)) and prototype.collision_box and prototype.collision_mask and
                 prototype.collision_mask["object-layer"] and
                 entity.name ~= "player" and
                 entity.type ~= "car"
@@ -178,27 +179,39 @@ function PB_helper.blocked_best_position(state)
 end
 
 function PB_helper.opt_join_networks(state)
-    state.best_distance_x = state.best_distance_x or math.huge
-    state.best_distance_y = state.best_distance_y or math.huge
+    local best_distance_x =
+        math.abs(
+        table.min(
+            state.pole_positions,
+            function(p)
+                return math.abs(p.x - state.aim_for_position.x)
+            end
+        ).x - state.aim_for_position.x
+    )
+    local best_distance_y =
+        math.abs(
+        table.min(
+            state.pole_positions,
+            function(p)
+                return math.abs(p.y - state.aim_for_position.y)
+            end
+        ).y - state.aim_for_position.y
+    )
 
     local best_position = nil
     local best_index = nil
     local best_distance = math.huge
-    if #state.reachable_zero_list == 1 then
-        best_position = state.reachable_zero_list[1]
-        best_index = 1
-    else
-        for i, pos in ipairs(state.reachable_zero_list) do
-            if
-                math.abs(state.aim_for_position.x - pos.x) <= state.best_distance_x or
-                    math.abs(state.aim_for_position.y - pos.y) <= state.best_distance_y
-             then
-                local distance = PB_helper.distance_position(state.aim_for_position, pos)
-                if distance < best_distance then
-                    best_distance = distance
-                    best_position = pos
-                    best_index = i
-                end
+
+    for i, pos in ipairs(state.reachable_zero_list) do
+        if
+            math.abs(state.aim_for_position.x - pos.x) < best_distance_x or
+                math.abs(state.aim_for_position.y - pos.y) < best_distance_y
+         then
+            local distance = PB_helper.distance_position(state.aim_for_position, pos)
+            if distance < best_distance then
+                best_distance = distance
+                best_position = pos
+                best_index = i
             end
         end
     end
@@ -212,6 +225,66 @@ function PB_helper.opt_join_networks(state)
         return false
     end
 end
+
+---------------------
+----------------------
+
+function PB_helper.full_join_poles(state)
+    local best_position = nil
+    local aim_for = state.aim_for_position
+    local closest_pole =
+        state.cached_closest_pole or
+        table.min(
+            state.pole_positions,
+            function(p)
+                return PB_helper.distance_position(p, aim_for)
+            end
+        )
+    if not closest_pole then
+        return false
+    end
+    local starting_distance = PB_helper.distance_position(closest_pole, aim_for)
+    local best_distance = starting_distance
+    local abs_center = PB_helper.abs_position(state, closest_pole)
+    local abs_aim_for = PB_helper.abs_position(state, aim_for)
+    local wire_distance = math.floor(state.conf.wire_distance)
+    local left = math.floor(abs_center.x - wire_distance) + state.conf.offset
+    local right = math.floor(abs_center.x + wire_distance) + state.conf.offset
+    local top = math.floor(abs_center.y - wire_distance) + state.conf.offset
+    local bottom = math.floor(abs_center.y + wire_distance) + state.conf.offset
+    for x = left, right do
+        for y = top, bottom do
+            local position = {x = x, y = y}
+            local distance = PB_helper.distance_position(position, abs_aim_for)
+            local wire_length = PB_helper.distance_position(position, abs_center)
+            if distance < best_distance and wire_length <= wire_distance then
+                if OB_helper.collision_check(state, {name = state.conf.pole, position = position}) then
+                    best_distance = distance
+                    best_position = position
+                end
+            end
+        end
+    end
+
+    if best_distance < starting_distance then
+        PB_helper.opt_place_arbitrary_pole(state, best_position)
+        state.cached_closest_pole = PB_helper.rel_position(state, best_position)
+        return true
+    end
+end
+
+function PB_helper.opt_place_arbitrary_pole(state, position)
+    local data = {name = state.conf.pole, position = position, force = state.force}
+    PB_helper.place_blueprint(state.surface, data)
+
+    local rel_position = PB_helper.rel_position(state, position)
+    PB_helper.opt_reachability(state, rel_position)
+    table.insert(state.pole_positions, rel_position)
+    return true
+end
+
+------------------
+-----------------
 
 function PB_helper.reachability_any_pole(state, rel_position, wire_distance)
     wire_distance = math.floor(wire_distance)

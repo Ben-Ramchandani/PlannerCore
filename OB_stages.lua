@@ -5,7 +5,13 @@ OB_stage = {}
 PlannerCore.stage_function_table.OB_stage = OB_stage
 
 function OB_stage.find_ore(state)
-    local ore_names = OB_helper.find_ore(state.event_entities)
+    local ore_names
+    if state.conf.use_all_ores then
+        ore_names = OB_helper.find_all_ores(state.event_entities)
+    else
+        ore_names = OB_helper.find_best_ores(state.event_entities)
+    end
+    
     if ore_names == nil then
         state.player.print({"outpost-builder.no-ore"})
         return OB_helper.on_error(state)
@@ -206,6 +212,7 @@ function blueprint_place.poles(state, entity, column, row)
     end
 
     if state.conf.pole_options_selected == "always" then
+        util.update_collision_bounding_box(state.entities_box, {position = position, name = state.conf.pole_name})
         OB_helper.place_entity(state, {position = position, name = state.conf.pole_name})
     else
         local index = (column - state.pole_indent_blueprint) % state.pole_spacing_blueprint
@@ -213,6 +220,7 @@ function blueprint_place.poles(state, entity, column, row)
             index == 0 or is_last_column and index > state.pole_indent_blueprint_end or
                 state.blueprint_data.other_electric_entities
          then
+            util.update_collision_bounding_box(state.entities_box, {position = position, name = state.conf.pole_name})
             if state.use_pole_builder then
                 local abs_position = OB_helper.abs_position(state, position)
                 if OB_helper.collision_check(state, {position = abs_position, name = state.conf.pole_name}) then
@@ -303,23 +311,6 @@ function OB_stage.place_blueprint_entity(state)
     end
 
     return false
-end
-
-function OB_stage.pole_builder_invoke(state)
-    remote.call(
-        "PlannerCoreInvoke",
-        "PoleBuilder",
-        {
-            player = state.player,
-            entities = state.placed_entities,
-            pole = state.conf.pole_name,
-            initial_pole_index = state.top_right_pole_index,
-            possible_pole_positions = state.possible_pole_positions,
-            surpress_info = true,
-            conf = {run_over_multiple_ticks = state.conf.run_over_multiple_ticks}
-        }
-    )
-    return true
 end
 
 function OB_stage.place_end_pipes(state)
@@ -438,45 +429,42 @@ function OB_stage.merge_lanes(state)
 end
 
 function OB_stage.train_align_y(state)
-    game.print("align called")
-
+    game.print("Direction: " .. tostring(state.conf.direction))
     local row = state.belt_row_details[#state.belt_row_details]
-    local splitter = false
-    if row.end_pos.y % 1 == 0 then
-        row.end_pos.y = row.end_pos.y - 0.5
-        splitter = true
-    end
     if row then
-        game.print(
-            "Input belt y is " ..
-                state.conf.station.bottom_input_belt_position.y ..
-                    ", output y is .. " .. OB_helper.abs_position(state, row.end_pos).y .. "."
-        )
-        if (OB_helper.abs_position(state, row.end_pos).y - state.conf.station.bottom_input_belt_position.y) % 2 ~= 1 then
-            game.print("align requred")
+        local splitter = false
+        if row.end_pos.y % 1 == 0 then
+            row.end_pos.y = row.end_pos.y - 0.5
+            splitter = true
+        end
+
+        game.print(state.conf.station.bottom_input_belt_position.y)
+        if
+            OB_helper.abs_position(state, {x = 0, y = row.end_pos.y - state.conf.station.bottom_input_belt_position.y}).y %
+                2 ~=
+                1
+         then
             local pos = row.end_pos
             if splitter then
-                game.print("Splitter")
+                -- pos.x = pos.x + 1
+                -- OB_helper.place_entity(state, {position = pos, name = row.belt, direction = defines.direction.east})
                 pos.y = pos.y + 1
-                pos.x = pos.x + 1
-                OB_helper.place_entity(state, {position = pos, name = row.belt, direction = defines.direction.east})
                 pos.x = pos.x + 1
                 OB_helper.place_entity(state, {position = pos, name = row.belt, direction = defines.direction.east})
             else
+                game.print("Moving by 1")
                 pos.x = pos.x + 1
                 OB_helper.place_entity(state, {position = pos, name = row.belt, direction = defines.direction.south})
-                game.print("Place at " .. serpent.block(OB_helper.abs_position(state, pos)))
                 pos.y = pos.y + 1
                 OB_helper.place_entity(state, {position = pos, name = row.belt, direction = defines.direction.east})
-                game.print("Place at " .. serpent.block(OB_helper.abs_position(state, pos)))
             end
         end
+        game.print(OB_helper.abs_position(state, row.end_pos).y)
     end
     return true
 end
 
 function OB_stage.collate_outputs(state) -- Move the outputs to be adjacent.
-    game.print("Collate start")
     local row = table.remove(state.belt_row_details)
     if row == nil then
         return true
@@ -520,28 +508,81 @@ function OB_stage.collate_outputs(state) -- Move the outputs to be adjacent.
     end
 end
 
+function place_entity_or_pole(state, entity)
+    if state.use_pole_builder and game.entity_prototypes[entity.name].type == "electric-pole" then
+        local position = OB_helper.abs_position(state, entity.position)
+        if OB_helper.collision_check(state, {position = position, name = state.conf.pole_name}) then
+            table.insert(state.possible_pole_positions, position)
+        end
+    else
+        OB_helper.place_entity(state, entity)
+    end
+end
+
 function OB_stage.place_station(state)
-    game.print("place station")
     local offset
     if #state.output_rows > 0 then
-        offset = OB_helper.abs_position(state, state.output_rows[1].end_pos)
-        offset.x = offset.x - state.conf.station.bottom_input_belt_position.x + 1
+        offset = state.output_rows[1].end_pos
+        offset.x = offset.x - state.conf.station.bottom_input_belt_position.x
         offset.y = offset.y - state.conf.station.bottom_input_belt_position.y
+        -- Y alignment guaranteed by train_align_y
+        if state.conf.direction % 4 == 2 then
+            if (OB_helper.abs_position(state, offset).x - state.conf.station.track_x) % 2 ~= 1 then
+                table.append_modify(state.conf.station.entities, state.conf.station.input_belts)
+                offset.x = offset.x + 1
+            end
+        else
+            if (OB_helper.abs_position(state, offset).y - state.conf.station.track_x) % 2 ~= 1 then
+                table.append_modify(state.conf.station.entities, state.conf.station.input_belts)
+                offset.x = offset.x + 1
+            end
+        end
     else
-        --TODO
-        game.print("unimplemented")
-        return true
+        local rel_entities_box = OB_helper.abs_area(state, state.entities_box)
+        offset = {
+            x = math.floor(rel_entities_box.right_bottom.x) + 2,
+            y = math.floor((rel_entities_box.right_bottom.y + rel_entities_box.left_top.y) / 2)
+        }
+        if OB_helper.abs_position(state, offset).y % 2 ~= 1 then
+            if state.conf.direction % 4 == 2 then
+                offset.y = offset.y + 1
+            else
+                offset.x = offset.x + 1
+            end
+        end
+        if OB_helper.abs_position(state, offset).x % 2 ~= 1 then
+            if state.conf.direction % 4 == 2 then
+                offset.x = offset.x + 1
+            else
+                offset.y = offset.y + 1
+            end
+        end
     end
-    if (#state.output_rows > 0) and (offset.x - state.conf.station.track_x) % 2 ~= 1 then
-        table.append_modify(state.conf.station.entities, state.conf.station.input_belts)
-    else
-        offset.x = offset.x - 1
-    end
-    for k, e in pairs(state.conf.station.entities) do
-        local entity = table.deep_clone(e)
+
+    for k, entity in pairs(state.conf.station.entities) do
+        if entity.name == "train-stop" then
+            game.print(serpent.block(entity))
+        end
         entity.position.x = offset.x + entity.position.x
         entity.position.y = offset.y + entity.position.y
-        OB_helper.abs_place_entity(state, entity)
+        place_entity_or_pole(state, entity)
     end
+    return true
+end
+
+function OB_stage.pole_builder_invoke(state)
+    remote.call(
+        "PlannerCoreInvoke",
+        "PoleBuilder",
+        {
+            player = state.player,
+            entities = state.placed_entities,
+            pole = state.conf.pole_name,
+            --initial_pole_index = state.top_right_pole_index,
+            possible_pole_positions = state.possible_pole_positions,
+            surpress_info = true,
+            conf = {run_over_multiple_ticks = state.conf.run_over_multiple_ticks}
+        }
+    )
     return true
 end

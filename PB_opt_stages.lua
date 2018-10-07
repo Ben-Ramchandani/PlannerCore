@@ -80,8 +80,21 @@ function PB_opt_stage.initialise_counts(state)
 end
 
 function PB_opt_stage.place_initial_pole(state)
-    local position = PB_helper.rel_position(state, state.initial_pole_position)
-    local pos = state.area[position.x][position.y]
+    local pos
+    if state.initial_pole_position then
+        local position = PB_helper.rel_position(state, state.initial_pole_position)
+        pos = state.area[position.x][position.y]
+    else
+        local max_count = 0
+        for x, c in pairs(state.area) do
+            for y, info in pairs(c) do
+                if #info.reachable_entities > max_count then
+                    max_count = #info.reachable_entities
+                    pos = info
+                end
+            end
+        end
+    end
     PB_helper.opt_place_pole(state, pos)
     return true
 end
@@ -110,8 +123,9 @@ function PB_opt_stage.place_best_pole(state)
             return true
         end
     elseif state.placement_stage == "joining" then
-        if PB_helper.opt_join_networks(state) then
+        if PB_helper.opt_join_networks(state) or PB_helper.full_join_poles(state) then
             if #state.reachable_list > 0 then
+                cached_closest_pole = nil
                 state.best_distance_x = nil
                 state.best_distance_y = nil
                 state.aim_for_position = nil

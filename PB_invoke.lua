@@ -51,7 +51,10 @@ function PB_invoke.run_pole_builder_opt(data)
         "place_initial_pole",
         "place_best_pole"
     }
-    local initial_pole_position = data.possible_pole_positions[data.initial_pole_index]
+    local initial_pole_position
+    if data.initial_pole_index then
+        initial_pole_position = data.possible_pole_positions[data.initial_pole_index]
+    end
 
     local state = {
         surface = surface,
@@ -192,7 +195,7 @@ function PB_invoke.remote_invoke(data)
     if not data.conf then
         data.conf = {run_over_multiple_ticks = true}
     end
-    if data.possible_pole_positions and (not data.entities or not data.initial_pole_index) then
+    if data.possible_pole_positions and (not data.entities) then
         game.print("PoleBuilder Error: bad remote invocation.")
         return nil
     end

@@ -131,6 +131,19 @@ function table.max(t, f)
     return t[table.max_index(t, f)]
 end
 
+function table.min_index(t, f)
+    return table.max_index(
+        t,
+        function(x)
+            return -f(x)
+        end
+    )
+end
+
+function table.min(t, f)
+    return t[table.min_index(t, f)]
+end
+
 function table.map(t, func)
     local new_table = {}
     for i, v in ipairs(t) do
@@ -300,28 +313,32 @@ function util.rotate_entity(entity, direction)
     return entity
 end
 
-function util.find_blueprint_bounding_box(entities)
-    local top = math.huge
-    local left = math.huge
-    local right = -math.huge
-    local bottom = -math.huge
+function util.update_bounding_box(box, new_point)
+    box.left_top.x = math.min(box.left_top.x, new_point.x)
+    box.left_top.y = math.min(box.left_top.y, new_point.y)
+    box.right_bottom.x = math.max(box.right_bottom.x, new_point.x)
+    box.right_bottom.y = math.max(box.right_bottom.y, new_point.y)
+end
 
-    for k, entity in pairs(entities) do
-        local prototype = game.entity_prototypes[entity.name]
-        if prototype.collision_box then
-            local collision_box = util.rotate_box(prototype.collision_box, entity.direction)
-            top = math.min(top, entity.position.y + collision_box.left_top.y)
-            left = math.min(left, entity.position.x + collision_box.left_top.x)
-            bottom = math.max(bottom, entity.position.y + collision_box.right_bottom.y)
-            right = math.max(right, entity.position.x + collision_box.right_bottom.x)
-        else
-            top = math.min(top, entity.position.y)
-            left = math.min(left, entity.position.x)
-            bottom = math.max(bottom, entity.position.y)
-            right = math.max(right, entity.position.x)
-        end
+function util.update_collision_bounding_box(box, entity)
+    local prototype = game.entity_prototypes[entity.name]
+    if prototype.collision_box then
+    local collision_box = prototype.collision_box
+        box.left_top.y = math.min(box.left_top.y, entity.position.y + collision_box.left_top.y)
+        box.left_top.x = math.min(box.left_top.x, entity.position.x + collision_box.left_top.x)
+        box.right_bottom.y = math.max(box.right_bottom.y, entity.position.y + collision_box.right_bottom.y)
+        box.right_bottom.x = math.max(box.right_bottom.x, entity.position.x + collision_box.right_bottom.x)
+    else
+        util.update_bounding_box(box, entity.position)
     end
-    return {left_top = {x = left, y = top}, right_bottom = {x = right, y = bottom}}
+end
+
+function util.find_blueprint_bounding_box(entities)
+    local box = {left_top = {x = math.huge, y = math.huge}, right_bottom = {x = -math.huge, y = -math.huge}}
+    for k, entity in pairs(entities) do
+        update_collision_bounding_box(box, entity)
+    end
+    return box
 end
 
 function util.shift_blueprint(entities, shift_x, shift_y)
@@ -394,10 +411,6 @@ function util.find_bounding_box_positions(positions)
         left_top = {x = left, y = top},
         right_bottom = {x = right, y = bottom}
     }
-end
-
-function util.make_area(left, top, right, bottom)
-    return {left_top = {x = left, y = top}, right_bottom = {x = right, y = bottom}}
 end
 
 function util.check_belt_entity(name)

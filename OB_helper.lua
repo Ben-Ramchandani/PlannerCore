@@ -1,6 +1,6 @@
 OB_helper = OB_helper or {}
 
-function OB_helper.find_ore(entities)
+function OB_helper.find_best_ores(entities)
     -- Find the most common ore in the area, or ores if they have the same product.
     local ore_counts_name = {}
     local ore_counts_by_product = {}
@@ -46,6 +46,21 @@ function OB_helper.find_ore(entities)
     end
 end
 
+function OB_helper.find_all_ores(entities)
+    local ore_names = {}
+    for k, entity in pairs(entities) do
+        if entity.valid and entity.prototype.resource_category == "basic-solid" then
+            ore_names[entity.name] = true
+        end
+    end
+    local ore_arr = util.dict_to_array(ore_names)
+    if table.getn(ore_arr) > 0 then
+        return ore_arr
+    else
+        return nil
+    end
+end
+
 function OB_helper.find_bounding_box_names(entities, names)
     local top = math.huge
     local left = math.huge
@@ -77,6 +92,7 @@ function OB_helper.place_blueprint(surface, data)
     return entity
 end
 
+-- TODO: Cliff collision
 function OB_helper.collision_check(state, abs_data)
     local box = util.rotate_box(game.entity_prototypes[abs_data.name].collision_box, abs_data.direction)
     local position = abs_data.position
@@ -126,8 +142,6 @@ function OB_helper.abs_place_entity(state, data)
     local name = data.name
 
     if state.conf.check_collision and not OB_helper.collision_check(state, data) then
-        game.print("Collision on " .. serpent.block(data))
-        state.stage = 1000 -- TODO
         state.had_collision = true
         return false
     end
@@ -151,6 +165,7 @@ function OB_helper.abs_place_entity(state, data)
             entity = OB_helper.place_blueprint(state.surface, data)
         end
     else
+        util.update_collision_bounding_box(state.entities_box, data)
         entity = OB_helper.place_blueprint(state.surface, data)
     end
 
@@ -225,7 +240,7 @@ function OB_helper.place_miner(state, data)
     local y = data.position.y
     local prototype = game.entity_prototypes[data.name]
 
-    if state.conf.check_dirty_mining then
+    if state.conf.check_dirty_mining and not state.conf.use_all_ores then
         local radius = prototype.mining_drill_radius
         local mining_box = {
             left_top = {x = x - radius, y = y - radius},
