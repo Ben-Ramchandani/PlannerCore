@@ -137,14 +137,14 @@ function OB_stage.set_up_placement_stages(state)
         if state.blueprint_data.miners[1].items then
             local speed_modifier = 1
             local productivity_modifier = 1
-            for k, v in pairs(state.blueprint_data.miners[1].items) do
-                if game.item_prototypes[k] and game.item_prototypes[k].type == "module" then
-                    if game.item_prototypes[k].module_effects.speed then
-                        speed_modifier = speed_modifier + (game.item_prototypes[k].module_effects.speed.bonus * v)
+            for prototype_string, item_count in pairs(state.blueprint_data.miners[1].items) do
+                if game.item_prototypes[prototype_string] and game.item_prototypes[prototype_string].type == "module" then
+                    if game.item_prototypes[prototype_string].module_effects.speed then
+                        speed_modifier = speed_modifier + (game.item_prototypes[prototype_string].module_effects.speed.bonus * item_count)
                     end
-                    if game.item_prototypes[k].module_effects.productivity then
+                    if game.item_prototypes[prototype_string].module_effects.productivity then
                         productivity_modifier =
-                            productivity_modifier + (game.item_prototypes[k].module_effects.productivity.bonus * v)
+                            productivity_modifier + (game.item_prototypes[prototype_string].module_effects.productivity.bonus * item_count)
                     end
                 end
             end
@@ -152,7 +152,6 @@ function OB_stage.set_up_placement_stages(state)
         end
         state.miner_res_per_sec =
             (1 + state.force.mining_drill_productivity_bonus) *
-            (miner_prototype.mining_power - ore_prototype.mineable_properties.hardness) *
             mining_speed /
             ore_prototype.mineable_properties.mining_time
     end
