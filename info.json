@@ -4,6 +4,6 @@
   "title": "PlannerCore",
   "author": "bob809",
   "description": "Core for planner series of mods.",
-  "factorio_version": "0.16",
-  "dependencies": ["base >= 0.16.1"]
+  "factorio_version": "0.17",
+  "dependencies": ["base >= 0.17.0"]
 }
