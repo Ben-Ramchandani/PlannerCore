@@ -10,6 +10,10 @@ Please submit bug reports to the issues page of the mod you're using when the cr
 
 ## Changelog
 
+0.2.1
+
+* OutpostPlanner now correctly raises `on_built_entity` event.
+
 0.2.0
 
 * Update for 0.17

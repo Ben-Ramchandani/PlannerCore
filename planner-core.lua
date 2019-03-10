@@ -42,7 +42,7 @@ function PlannerCore.placement_tick(state)
 end
 
 function PlannerCore.check_state(state)
-    if not state and state.stage and state.count and state.player and state.stages and state.stage_namespace then
+    if not (state and state.stage and state.count and state.player and state.stages and state.stage_namespace) then
         game.print("Missing basic property.")
         return false
     end

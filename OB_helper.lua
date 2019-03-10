@@ -135,16 +135,16 @@ function OB_helper.abs_place_entity(state, data)
         if state.surface.can_place_entity(data) then
             if state.conf.drain_inventory then
                 if state.player.get_item_count(data.name) > 0 then
-                    state.player.remove_item({name = data.name, count = 1})
-                else
-                    if state.conf.place_blueprint_on_out_of_inventory then
-                        entity = OB_helper.place_blueprint(state.surface, data)
-                    else
-                        return nil
+                    entity = state.surface.create_entity(data)
+                    if entity then
+                        state.player.remove_item({name = data.name, count = 1})
                     end
+                elseif state.conf.place_blueprint_on_out_of_inventory then
+                    entity = OB_helper.place_blueprint(state.surface, data)
                 end
+            else
+                entity = state.surface.create_entity(data)
             end
-            entity = state.surface.create_entity(data)
         elseif state.conf.place_blueprint_on_collision then
             entity = OB_helper.place_blueprint(state.surface, data)
         end
@@ -152,7 +152,19 @@ function OB_helper.abs_place_entity(state, data)
         entity = OB_helper.place_blueprint(state.surface, data)
     end
 
-    if entity and state.use_pole_builder and game.entity_prototypes[name].electric_energy_source_prototype then
+    if not entity then
+        return nil
+    end
+
+    script.raise_event(
+        defines.events.on_built_entity,
+        {
+            created_entity = entity,
+            player_index = state.player.index
+        }
+    )
+
+    if state.use_pole_builder and game.entity_prototypes[name].electric_energy_source_prototype then
         table.insert(
             state.placed_entities,
             {
