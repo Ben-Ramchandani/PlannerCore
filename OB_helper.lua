@@ -156,14 +156,6 @@ function OB_helper.abs_place_entity(state, data)
         return nil
     end
 
-    script.raise_event(
-        defines.events.on_built_entity,
-        {
-            created_entity = entity,
-            player_index = state.player.index
-        }
-    )
-
     if state.use_pole_builder and game.entity_prototypes[name].electric_energy_source_prototype then
         table.insert(
             state.placed_entities,
@@ -175,6 +167,14 @@ function OB_helper.abs_place_entity(state, data)
             }
         )
     end
+
+    script.raise_event(
+        defines.events.on_built_entity,
+        {
+            created_entity = entity,
+            player_index = state.player.index
+        }
+    )
 
     return entity
 end
