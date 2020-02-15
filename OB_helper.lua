@@ -199,7 +199,7 @@ function OB_helper.choose_belt(state, row_details)
         if state.miner_res_per_sec then
             local res_per_sec =
                 math.max(row_details.miner_count_below, row_details.miner_count_above) * 2 * state.miner_res_per_sec
-            required_belt_speed = (res_per_sec / 7.111) / 60
+            required_belt_speed = (res_per_sec / 8) / 60
         end
 
         -- Resources required from this row to have fully compressed output
