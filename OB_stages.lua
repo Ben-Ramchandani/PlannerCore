@@ -152,8 +152,7 @@ function OB_stage.set_up_placement_stages(state)
         end
         state.miner_res_per_sec =
             (1 + state.force.mining_drill_productivity_bonus) *
-            mining_speed /
-            ore_prototype.mineable_properties.mining_time
+            mining_speed / ore_prototype.mineable_properties.mining_time
     end
 
     for i = 1, state.num_rows do
