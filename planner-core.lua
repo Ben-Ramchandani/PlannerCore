@@ -114,8 +114,8 @@ function PlannerCore.on_tick(event)
             --     game.print("Handler running")
             --     game.print("In stage " .. state.stage)
             -- end
-            if state.count > 10000 then
-                game.print("PlannerCore Error: Count exceeds 10000, will abort.")
+            if state.count > 100000 then
+                game.print("PlannerCore Error: Count exceeds 100000, will abort.")
                 game.print("Was in state " .. state.stage .. " (" .. state.stages[state.stage] .. ").")
                 table.remove(global.running_states, i)
             else
