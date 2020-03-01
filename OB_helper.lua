@@ -168,10 +168,9 @@ function OB_helper.abs_place_entity(state, data)
     end
 
     script.raise_event(
-        defines.events.on_built_entity,
+        defines.events.script_raised_built,
         {
-            created_entity = entity,
-            player_index = state.player.index
+            created_entity = entity
         }
     )
 
