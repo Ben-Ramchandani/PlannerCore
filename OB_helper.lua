@@ -1,12 +1,11 @@
 OB_helper = OB_helper or {}
 
-function OB_helper.find_ore(entities)
+function OB_helper.find_ore(ore_entities, resource_categories)
     -- Find the most common ore in the area, or ores if they have the same product.
-    local ore_counts_name = {}
     local ore_counts_by_product = {}
-    local ore_products_to_names = {}
-    for k, entity in pairs(entities) do
-        if entity.valid and entity.prototype.resource_category == "basic-solid" then
+    local products_to_ore_names = {}
+    for k, entity in pairs(ore_entities) do
+        if entity.valid and resource_categories[entity.prototype.resource_category] then
             local name
             if #entity.prototype.mineable_properties.products == 1 then
                 name = entity.prototype.mineable_properties.products[1].name
@@ -26,8 +25,8 @@ function OB_helper.find_ore(entities)
             else
                 ore_counts_by_product[name] = 0
             end
-            ore_products_to_names[name] = ore_products_to_names[name] or {}
-            ore_products_to_names[name][entity.name] = true
+            products_to_ore_names[name] = products_to_ore_names[name] or {}
+            products_to_ore_names[name][entity.name] = true
         end
     end
 
@@ -40,7 +39,7 @@ function OB_helper.find_ore(entities)
     end
 
     if max_product then
-        return util.dict_to_array(ore_products_to_names[max_product])
+        return util.dict_to_array(products_to_ore_names[max_product])
     else
         return nil
     end

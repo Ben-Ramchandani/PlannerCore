@@ -5,7 +5,7 @@ OB_stage = {}
 PlannerCore.stage_function_table.OB_stage = OB_stage
 
 function OB_stage.find_ore(state)
-    local ore_names = OB_helper.find_ore(state.event_entities)
+    local ore_names = OB_helper.find_ore(state.event_entities, game.entity_prototypes[state.conf.miner_name].resource_categories)
     if ore_names == nil then
         state.player.print({"outpost-builder.no-ore"})
         return OB_helper.on_error(state)
@@ -62,6 +62,7 @@ function OB_stage.set_up_placement_stages(state)
     state.entities_per_row = state.entities_per_blueprint * state.blueprints_per_row
     state.placed_entities = {}
 
+    -- Poles --
     local pole_prototype = game.entity_prototypes[state.conf.pole_name]
     local pole_spacing
     -- I'm not sure this formula is perfect, but it works for all the vanilla poles.
@@ -87,6 +88,7 @@ function OB_stage.set_up_placement_stages(state)
         state.pole_indent_blueprint = 0
     end
 
+    -- Select stages --
     table.append_modify(state.stages, {"place_blueprint_entity"})
 
     if state.fluid and state.conf.enable_pipe_placement then
@@ -115,6 +117,7 @@ function OB_stage.set_up_placement_stages(state)
         end
     end
 
+    -- Transport belts --
     state.transport_belts =
         table.map(
         state.conf.transport_belts,
@@ -129,6 +132,8 @@ function OB_stage.set_up_placement_stages(state)
         end
     )
     state.fastest_belt_speed = state.transport_belts[#state.transport_belts].speed
+
+    -- Mining speed --
     if #state.ore_names == 1 and not game.entity_prototypes[state.ore_names[1]].infinite_resource then
         -- See https://wiki.factorio.com/Mining
         local miner_prototype = game.entity_prototypes[state.conf.miner_name]
@@ -155,6 +160,7 @@ function OB_stage.set_up_placement_stages(state)
             mining_speed / ore_prototype.mineable_properties.mining_time
     end
 
+    -- Row details --
     for i = 1, state.num_rows do
         table.insert(
             state.row_details,
