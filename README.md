@@ -10,6 +10,14 @@ Please submit bug reports to the issues page of the mod you're using when the cr
 
 ## Changelog
 
+0.2.3
+
+* Fix script event crash in Factorio version >= 0.18.27
+
+0.2.2
+
+* Update for 0.18
+
 0.2.1
 
 * OutpostPlanner now correctly raises `on_built_entity` event.
