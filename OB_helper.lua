@@ -170,7 +170,7 @@ function OB_helper.abs_place_entity(state, data)
     script.raise_event(
         defines.events.script_raised_built,
         {
-            created_entity = entity
+            entity = entity
         }
     )
 
