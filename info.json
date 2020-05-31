@@ -1,9 +1,9 @@
 {
   "name": "PlannerCore",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "title": "PlannerCore",
   "author": "bob809",
   "description": "Core for planner series of mods.",
   "factorio_version": "0.18",
-  "dependencies": ["base >= 0.18.0"]
+  "dependencies": ["base >= 0.18.28"]
 }
